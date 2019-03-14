@@ -1,0 +1,20 @@
+{
+  "name": "batch-task-client",
+  "version": "1.0.0",
+  "description": "batch task client",
+  "main": "index.js",
+  "repository": "https://github.com/liuwill/batch-task-client",
+  "author": "liuwill",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "chalk": "^2.4.2",
+    "rxjs": "^6.4.0",
+    "typescript": "^3.3.3333"
+  },
+  "devDependencies": {
+    "@types/node": "^11.11.3",
+    "ts-node": "^8.0.3",
+    "tslint": "^5.14.0"
+  }
+}
