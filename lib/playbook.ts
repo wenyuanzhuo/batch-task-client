@@ -1,10 +1,13 @@
 import FailStory from "./story/fail";
 import DropStory from "./story/drop";
+import SuccessStory from "./story/success";
 import HelpStory from "./story/help";
 import { BaseStory } from './story/base';
 
 const book = {
   fail: new FailStory(),
+  success: new SuccessStory(),
+  drop: new DropStory(),
   help: new HelpStory(),
 }
 

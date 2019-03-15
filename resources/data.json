@@ -1,0 +1,13 @@
+{
+  "source": [
+    { "order_id": "" }
+  ],
+  "process": {
+    "": {
+      "source": { "order_id": "" },
+      "setStatus": false,
+      "refundStatus": false,
+      "successStatus": false
+    }
+  }
+}
