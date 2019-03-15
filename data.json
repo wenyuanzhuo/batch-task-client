@@ -1,0 +1,31 @@
+{
+  "name": "test",
+  "list": [
+    {
+      "source": [
+        { "order_id": "" }
+      ],
+      "process": {
+        "1e426afcbfbb4400b9b07084466baf10": {
+          "source": { "order_id": "" },
+          "setStatus": false,
+          "refundStatus": false,
+          "successStatus": false
+        }
+      }
+    },
+    {
+      "source": [
+        { "order_id": "" }
+      ],
+      "process": {
+        "1e426afcbfbb4400b9b07084466baf10": {
+          "source": { "order_id": "" },
+          "setStatus": false,
+          "refundStatus": false,
+          "successStatus": false
+        }
+      }
+    }
+  ]
+}

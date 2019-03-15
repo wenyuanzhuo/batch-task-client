@@ -10,3 +10,11 @@ export function queryPresaleOrderStatus(orderId): Observable<any> {
     }),
   }).then(response => response.data))
 }
+
+export function setPresaleOrderStatusApi(orderId): Observable<any> {
+  return from(request.getInstance().post(serverApi.setPresaleOrderStatus, {
+    params: helper.buildQuery({
+      order_id: orderId,
+    }),
+  }).then(response => response.data))
+}
