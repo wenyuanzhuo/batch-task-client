@@ -6,6 +6,10 @@
   "repository": "https://github.com/liuwill/batch-task-client",
   "author": "liuwill",
   "license": "MIT",
+  "scripts": {
+    "start": "ts-node main.ts",
+    "init": "cp app.template.json app.json"
+  },
   "dependencies": {
     "axios": "^0.18.0",
     "chalk": "^2.4.2",
