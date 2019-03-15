@@ -11,7 +11,7 @@ export const buildQuery = (requestParams) => {
   })
 
   return Object.assign({}, requestParams, {
-    appid: '',
-    appsecret: '',
+    app_id: '',
+    app_secret: '',
   })
 }

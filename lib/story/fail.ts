@@ -61,7 +61,7 @@ export default class FailStory implements BaseStory {
 
   execute(): Observable<any> {
     return of(Promise.resolve(logger.info([
-      '>', 'Starting Load Local Config!'
+      '>', 'Starting Load Source Fail!'
     ].join(' '))))
       .pipe(concatMap(this.readFile))
       .pipe(concatMap(this.setPresaleOrderStatus))
