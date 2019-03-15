@@ -15,6 +15,8 @@ pingpp.setPrivateKey(pingppPrivateKey);
 
 const resourcePath = path.resolve('./resources/')
 
+const filePath = path.resolve('resources/data.json')
+
 @StoryRegister
 export default class DropStory implements BaseStory {
 
@@ -23,7 +25,6 @@ export default class DropStory implements BaseStory {
   }
 
   readFile(): Promise<any> {
-    const filePath = path.resolve('resources/data.json')
     if (!fs.existsSync(filePath)) {
       throw new Error('找不到数据文件')
     }
@@ -63,29 +64,93 @@ export default class DropStory implements BaseStory {
   runBatch(localMemory): Promise<any> {
     const loadData = localMemory.storage
     const checkedData = localMemory.checked
+    const orderIds = []
 
     const parallelRequests = []
     for (let orderId in checkedData) {
+      orderIds.push(orderId)
       const orderData = checkedData[orderId]
       const currentTask = Promise.resolve(new Promise((resolve, reject) => {
         pingpp.charges.retrieve(
           orderData.serial,
-          function(err, charge) {
-            // YOUR CODE
+          function (err, charge) {
             if (err) {
               resolve(null)
               return
             }
-            resolve(loadData)
+            resolve(charge)
           }
         );
-      })).then()
+      })).then((chargeInfo: any) => {
+        if (!chargeInfo) {
+          return false
+        } else if (chargeInfo.refunded) {
+          return true
+        }
+
+        return true
+        return new Promise((resolve, reject) => {
+          pingpp.charges.createRefund(
+            orderData.serial,
+            { description: `order_id:${orderId}` },
+            function (err, charge) {
+              if (err) {
+                resolve(false)
+                return
+              }
+              resolve(true)
+            }
+          );
+        })
+      })
       parallelRequests.push(currentTask)
     }
-    return Promise.all(parallelRequests)
+
+    return Promise.all(parallelRequests).then(parallelResults => {
+      for (let i in parallelResults) {
+        const orderId = orderIds[i]
+        if (parallelResults[i] === true) {
+          loadData.process[orderId].refundStatus = true
+        }
+      }
+
+      return loadData
+    })
   }
 
   saveData(loadData): Promise<any> {
+    fs.writeFileSync(filePath, JSON.stringify(loadData), 'utf-8')
+    return Promise.resolve(loadData)
+  }
+
+  review(loadData): Promise<any> {
+    const total = loadData.source.length
+    let settingCount = 0
+    let refundCount = 0
+    let successCount = 0
+
+    for (let orderId in loadData.process) {
+      const orderData = loadData.process[orderId]
+      if (orderData.setStatus) {
+        settingCount++
+      }
+
+      if (orderData.refundStatus) {
+        refundCount++
+      }
+
+      if (orderData.successStatus) {
+        successCount++
+      }
+    }
+
+    logger.info([
+      'Refund Summary: ',
+      chalk.green(`total: ${total}`),
+      chalk.yellow(`set: ${settingCount}`),
+      chalk.blue(`refund: ${refundCount}`),
+      `success: ${successCount}`,
+    ].join(' '))
     return Promise.resolve(1)
   }
 
@@ -99,5 +164,6 @@ export default class DropStory implements BaseStory {
       .pipe(concatMap(this.checkOrder))
       .pipe(concatMap(this.runBatch))
       .pipe(concatMap(this.saveData))
+      .pipe(concatMap(this.review))
   }
 }
