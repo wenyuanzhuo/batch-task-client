@@ -20,11 +20,11 @@ export default class FailStory implements BaseStory {
   }
 
   readFile(): Promise<any> {
-    const dataPath = path.resolve('./data.json')
+    const dataPath = path.resolve('./resources/data.json')
     const content = fs.readFileSync(dataPath, 'utf-8')
     const fileObj = JSON.parse(content)
-    const { list = [] } = fileObj || {}
-    return Promise.resolve(list)
+    const { source = [] } = fileObj || {}
+    return Promise.resolve(source)
   }
 
   setPresaleOrderStatus(list): Promise<any> {
@@ -32,27 +32,47 @@ export default class FailStory implements BaseStory {
       return Promise.reject(new Error('没有找到任何配置'))
     }
 
-    const resultList = []
+    let resultObj = {}
 
     const setRequestList = (list) => {
       return list.map(item => {
-        return () => setPresaleOrderStatusApi(item.id)
+        return setPresaleOrderStatusApi(item.order_id).toPromise().then(res => {
+          return res
+        })
       })
     }
 
     const batchSet = (list) => {
       return Promise.all(setRequestList(list)).then(dropPresaleList => {
-        console.log('ss...1')
-        // filter
-        const successList = [9090,2100]
-        const failList = []
-        successList.length && resultList.concat(successList)
+
+        const successList = dropPresaleList.filter((item: any) => {
+          return item && item.status === 0 && item.data
+        })
+        const failList = dropPresaleList.filter((item: any) => {
+          return item && item.status !== 0 || !item.data
+        })
+
+        resultObj = successList.reduce((result, item: any) => {
+          const { order_id } = item.data
+          result[order_id] = {
+            "source": { "order_id": order_id },
+            "setStatus": true,
+            "refundStatus": false,
+            "successStatus": false
+          }
+
+          return result
+        }, resultObj)
+
         if (failList.length) {
-          batchSet(failList)
-          return
+          console.error(`有${failList.length}条订单设置失败！`)
+          // batchSet(failList)
+          // return
         }
-        console.log('sss....2')
-        return Promise.resolve({ resultList })
+  
+        const newPath = path.resolve('./resources/data.json')
+        fs.writeFileSync(newPath, JSON.stringify(resultObj), 'utf-8')
+        return Promise.resolve({ resultObj })
       })
     }
     
