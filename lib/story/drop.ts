@@ -4,10 +4,13 @@ import { concatMap } from 'rxjs/operators'
 import { logger } from '../services/logger'
 import { StoryRegister } from '../decorators/register'
 import * as reader from '../services/reader'
-import { appConfig } from '../config/global'
+import { appConfig, pingppPrivateKey } from '../config/global'
 import chalk from 'chalk'
 import * as path from 'path'
 import * as fs from 'fs'
+
+var pingpp = require('pingpp')(appConfig.pingppSecretKey);
+pingpp.setPrivateKey(pingppPrivateKey);
 
 const resourcePath = path.resolve('./resources/')
 
@@ -18,76 +21,52 @@ export default class DropStory implements BaseStory {
     return 'Drop Story';
   }
 
-  readLocal(): Promise<any> {
-    const files = fs.readdirSync(resourcePath)
-    let pageFiles = files.filter(item => {
-      const fullPath = path.join(resourcePath, item)
-      if (item.endsWith('.json') && fs.statSync(fullPath).isFile()) {
-        return true
-      }
-      return false
-    }).map(item => {
-      const fullPath = path.join(resourcePath, item)
-      const content = fs.readFileSync(fullPath, 'utf-8')
-      const fileObj = JSON.parse(content)
-      return {
-        id: fileObj['page_id'],
-        file: item,
-        path: fullPath,
-        content: fileObj,
-      }
-    })
-
-    return Promise.resolve({
-      list: pageFiles,
-    });
-  }
-
-  askPage(localPage): Promise<any> {
-    const pageList = localPage.list
-    const pageIds = pageList.map(item => item.id)
-    if (!pageList.length) {
-      return Promise.reject(new Error('没有找到任何配置'));
+  readFile(): Promise<any> {
+    const filePath = path.resolve('resources/data.json')
+    if (!fs.existsSync(filePath)) {
+      throw new Error('找不到数据文件')
     }
+    const str = fs.readFileSync(filePath, 'utf8')
+    const data = JSON.parse(str)
 
-    const pageMap = pageList.reduce((result, current) => {
-      result[current.id] = current
-      return result
-    }, {})
+    return Promise.resolve(data);
+  }
 
-    return reader.readlinePromise([
-      chalk.gray('> Choose Page From '),
-      '[',
-      chalk.green(`${pageIds.join(',')}`),
-      ']:',
-    ].join(' ')).then(pageId => {
-      if (!pageMap[`${pageId}`]) {
-        throw new Error('没有选择任何配置文件')
-      }
-
-      return {
-        page: pageId,
-        pageIds: pageIds,
-        file: pageMap[`${pageId}`],
-      }
+  checkOrder(loadData): Promise<any> {
+    console.log(chalk.blue(loadData.source.length))
+    return Promise.resolve({
+      storage: loadData,
+      checked: {},
     })
   }
 
-  checkPage(pageMetaData): Promise<any> {
-    return Promise.resolve(1)
+  runBatch(loadData): Promise<any> {
+
+    return new Promise((resolve, reject) => {
+      pingpp.charges.retrieve(
+        "ch_GizHmD9KKaT450CGyPzbfTW9",
+        function(err, charge) {
+          // YOUR CODE
+          console.log(err, charge)
+          resolve(loadData)
+        }
+      );
+    })
   }
 
-  buildPage(pageMetaData): Promise<any> {
+  saveData(loadData): Promise<any> {
     return Promise.resolve(1)
   }
 
   execute(): Observable<any> {
     return of(Promise.resolve(logger.info([
-      '>', 'Starting Load Local Config!'
+      '>',
+      chalk.cyan('[DROP]'),
+      'Starting Load Data File!',
     ].join(' '))))
-      .pipe(concatMap(this.readLocal))
-      .pipe(concatMap(this.askPage))
-      .pipe(concatMap(this.checkPage))
-      .pipe(concatMap(this.buildPage))
+      .pipe(concatMap(this.readFile))
+      .pipe(concatMap(this.checkOrder))
+      .pipe(concatMap(this.runBatch))
+      .pipe(concatMap(this.saveData))
   }
 }
