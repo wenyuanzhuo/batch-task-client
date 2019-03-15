@@ -1,3 +1,4 @@
+import { appConfig, serverApi, hostConfig } from '../config/global'
 
 export const buildQuery = (requestParams) => {
   requestParams = requestParams || {}
@@ -11,7 +12,7 @@ export const buildQuery = (requestParams) => {
   })
 
   return Object.assign({}, requestParams, {
-    app_id: '',
-    app_secret: '',
+    app_id: hostConfig.appId,
+    app_secret: hostConfig.appSecret,
   })
 }
