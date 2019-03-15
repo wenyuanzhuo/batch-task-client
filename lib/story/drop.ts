@@ -27,32 +27,62 @@ export default class DropStory implements BaseStory {
     if (!fs.existsSync(filePath)) {
       throw new Error('找不到数据文件')
     }
-    const str = fs.readFileSync(filePath, 'utf8')
+    const str = fs.readFileSync(filePath, 'utf-8')
     const data = JSON.parse(str)
 
     return Promise.resolve(data);
   }
 
-  checkOrder(loadData): Promise<any> {
-    console.log(chalk.blue(loadData.source.length))
-    return Promise.resolve({
-      storage: loadData,
-      checked: {},
+  checkOrder(loadData: any): Promise<any> {
+    const checkedOrderData = {}
+    const parallelRequests = []
+    const orderIds = []
+    for (let orderId in loadData.process) {
+      orderIds.push(orderId)
+      const orderData = loadData.process[orderId]
+
+      parallelRequests.push(serverApi.queryPresaleOrderStatus(orderId).toPromise())
+    }
+
+    return Promise.all(parallelRequests).then(parallelResults => {
+      for (let i in parallelResults) {
+        let orderId = orderIds[i]
+        let responseData = parallelResults[i]
+
+        if (responseData.status === 0 && responseData.data && responseData.data.order_id === orderId) {
+          checkedOrderData[orderId] = responseData.data
+        }
+      }
+      return {
+        storage: loadData,
+        checked: checkedOrderData,
+      }
     })
   }
 
-  runBatch(loadData): Promise<any> {
+  runBatch(localMemory): Promise<any> {
+    const loadData = localMemory.storage
+    const checkedData = localMemory.checked
 
-    return new Promise((resolve, reject) => {
-      pingpp.charges.retrieve(
-        "ch_GizHmD9KKaT450CGyPzbfTW9",
-        function(err, charge) {
-          // YOUR CODE
-          console.log(err, charge)
-          resolve(loadData)
-        }
-      );
-    })
+    const parallelRequests = []
+    for (let orderId in checkedData) {
+      const orderData = checkedData[orderId]
+      const currentTask = Promise.resolve(new Promise((resolve, reject) => {
+        pingpp.charges.retrieve(
+          orderData.serial,
+          function(err, charge) {
+            // YOUR CODE
+            if (err) {
+              resolve(null)
+              return
+            }
+            resolve(loadData)
+          }
+        );
+      })).then()
+      parallelRequests.push(currentTask)
+    }
+    return Promise.all(parallelRequests)
   }
 
   saveData(loadData): Promise<any> {

@@ -23,11 +23,12 @@ export default class FailStory implements BaseStory {
     const dataPath = path.resolve('./resources/data.json')
     const content = fs.readFileSync(dataPath, 'utf-8')
     const fileObj = JSON.parse(content)
-    const { source = [] } = fileObj || {}
-    return Promise.resolve(source)
+    // const { source = [] } = fileObj || {}
+    return Promise.resolve(fileObj)
   }
 
-  setPresaleOrderStatus(list): Promise<any> {
+  setPresaleOrderStatus(fileData): Promise<any> {
+    const list = fileData.source
     if (!list || !list.length) {
       return Promise.reject(new Error('没有找到任何配置'))
     }
@@ -69,13 +70,14 @@ export default class FailStory implements BaseStory {
           // batchSet(failList)
           // return
         }
-  
+
         const newPath = path.resolve('./resources/data.json')
-        fs.writeFileSync(newPath, JSON.stringify(resultObj), 'utf-8')
+        fileData.process = resultObj
+        fs.writeFileSync(newPath, JSON.stringify(fileData), 'utf-8')
         return Promise.resolve({ resultObj })
       })
     }
-    
+
     return batchSet(list)
   }
 
