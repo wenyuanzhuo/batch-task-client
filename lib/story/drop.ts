@@ -3,6 +3,7 @@ import { Observable, zip, of } from 'rxjs';
 import { concatMap } from 'rxjs/operators'
 import { logger } from '../services/logger'
 import { StoryRegister } from '../decorators/register'
+import * as serverApi from '../api/server.api'
 import * as reader from '../services/reader'
 import { appConfig, pingppPrivateKey } from '../config/global'
 import chalk from 'chalk'
